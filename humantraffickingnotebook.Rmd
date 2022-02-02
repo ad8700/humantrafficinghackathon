@@ -1,0 +1,31 @@
+---
+title: "Human Trafficking Hackathon Notebook"
+output: html_notebook
+---
+
+This project seeks to find statsitical relationships in a survey done on the subject of Human Trafficing in Fiji by the UN Office on Drugs and Crime (UNODC). UNODC recently surveyed 1,000 people in Fiji about their experiences with trafficking in persons. The questionnaire, deployed in partnership with the Fijian Bureau of Statistics, touched upon trafficking for forced labour, sexual exploitation, and forced marriage. Estimating the prevalence of human trafficking is dearly needed and yet rarely done as very difficult in terms of methodology. In addition, technology can support data analysis and visualization which in turn contributes to understanding the phenomenon its root causes. The research questions that we are asking are:
+
+1) Do any geographical areas of Fiji have significantly more or less prevalance of human trafficking?
+2) Are there any social or demographic factors which tend to be predictive of higher incidences of human trafficking
+
+The end goal of the research is to create a product which can be reused in other nations and help the UNODC identify root causes of trafficking and reduce or eliminate the problem
+
+First, import any needed libraries
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(readxl)
+```
+
+Next, import the provided dataset from the Fiji survey
+```{r}
+fiji_data <- read_excel("data/UNODC_Data_Fiji_Human_Trafficking.xlsx")
+```
+
+
+
+
+
+
+
+
