@@ -3,9 +3,9 @@ title: "Human Trafficking Hackathon Notebook"
 output: html_notebook
 ---
 
-This project seeks to find statsitical relationships in a survey done on the subject of Human Trafficing in Fiji by the UN Office on Drugs and Crime (UNODC). UNODC recently surveyed 1,000 people in Fiji about their experiences with trafficking in persons. The questionnaire, deployed in partnership with the Fijian Bureau of Statistics, touched upon trafficking for forced labour, sexual exploitation, and forced marriage. Estimating the prevalence of human trafficking is dearly needed and yet rarely done as very difficult in terms of methodology. In addition, technology can support data analysis and visualization which in turn contributes to understanding the phenomenon its root causes. The research questions that we are asking are:
+This project seeks to find statsitical relationships in a survey done on the subject of Human Trafficking in Fiji by the UN Office on Drugs and Crime (UNODC). UNODC recently surveyed 1,000 people in Fiji about their experiences with trafficking in persons. The questionnaire, deployed in partnership with the Fijian Bureau of Statistics, touched upon trafficking for forced labour, sexual exploitation, and forced marriage. Estimating the prevalence of human trafficking is dearly needed and yet rarely done as very difficult in terms of methodology. In addition, technology can support data analysis and visualization which in turn contributes to understanding the phenomenon its root causes. The research questions that we are asking are:
 
-1) Do any geographical areas of Fiji have significantly more or less prevalance of human trafficking?
+1) Do any geographical areas based on population density have significantly more or less prevalance of human trafficking?
 2) Are there any social or demographic factors which tend to be predictive of higher incidences of human trafficking
 
 The end goal of the research is to create a product which can be reused in other nations and help the UNODC identify root causes of trafficking and reduce or eliminate the problem
@@ -15,12 +15,198 @@ First, import any needed libraries
 library(tidyverse)
 library(ggplot2)
 library(readxl)
+library(shiny)
 ```
 
 Next, import the provided dataset from the Fiji survey
 ```{r}
 fiji_data <- read_excel("data/UNODC_Data_Fiji_Human_Trafficking.xlsx")
 ```
+
+Now that the data is loaded, we want to create a subset of the data containing the unique id if the interview (for counting purposes), the province and tikina (Q1.4) and the responses to the questions about if the respondent was a victim of any unjust labor practices (Q2 a:k, Q11 a:k).  Specific field names are:
+1. interview__id
+2. province
+#3. tikina
+4. lesspay_2a
+5. typeofwork
+6. workinghrs
+7. pressured
+8. threatened
+9. harmed
+10. threatened_pay
+11. threatened_report
+12. id_papers
+13. comm_family
+14. comm_others
+15. lesspay_11a
+16. workinghrs_11c
+17. pressured_11d
+18. threatened_11e
+19. harmed_11f
+20. threatened_pay_11g
+21. threatened_report_11h
+22. id_papers_11i
+23. comm_family_11j
+24. comm_others_11k
+25. yes_number_12k
+
+We want to remove the NA values in the response columns so that we can see the whole population, including those who answered 'No' to question 1 - "Do you currently work or have you worked for money in the last 5 years?"
+
+```{r}
+fiji_data$currentwork <- as.numeric(sub("^(\\d{1}).*$", "\\1", fiji_data$currentwork))
+fiji_filtered <- fiji_data %>% filter(currentwork == 1)
+```
+
+
+```{r}
+fiji_subset <- fiji_filtered %>% select(interview__id, province, lesspay_2a, typeofwork,
+                                    workinghrs, pressured, threatened, harmed, threatened_pay, 
+                                    threatened_report, id_papers, comm_family, lesspay_11a,
+                                    workinghrs_11c, pressured_11d, threatened_11e, harmed_11f, 
+                                    threatened_pay_11g, threatened_report_11h, id_papers_11i, 
+                                    comm_family_11j, comm_others_11k, yes_number_12k)
+```
+
+
+
+
+It will probably be helpful to compute the percentage of yes and no responses for each province.  Let's convert the strings to numeric values by only keeping the first character of each string in the columns and then convert that string to a numeric.
+
+```{r}
+fiji_subset$lesspay_2a <- as.numeric(sub("^(\\d{1}).*$", "\\1", fiji_subset$lesspay_2a))
+fiji_subset$typeofwork <- as.numeric(sub("^(\\d{1}).*$", "\\1", fiji_subset$typeofwork))
+fiji_subset$workinghrs <- as.numeric(sub("^(\\d{1}).*$", "\\1", fiji_subset$workinghrs))
+fiji_subset$pressured <- as.numeric(sub("^(\\d{1}).*$", "\\1", fiji_subset$pressured))
+fiji_subset$threatened <- as.numeric(sub("^(\\d{1}).*$", "\\1", fiji_subset$threatened))
+fiji_subset$harmed <- as.numeric(sub("^(\\d{1}).*$", "\\1", fiji_subset$harmed))
+fiji_subset$threatened_pay <- as.numeric(sub("^(\\d{1}).*$", "\\1", fiji_subset$threatened_pay))
+fiji_subset$threatened_report <- as.numeric(sub("^(\\d{1}).*$", "\\1", fiji_subset$threatened_report))
+fiji_subset$id_papers <- as.numeric(sub("^(\\d{1}).*$", "\\1", fiji_subset$id_papers))
+fiji_subset$comm_family <- as.numeric(sub("^(\\d{1}).*$", "\\1", fiji_subset$comm_family))
+fiji_subset$lesspay_11a <- as.numeric(sub("^(\\d{1}).*$", "\\1", fiji_subset$lesspay_11a))
+fiji_subset$workinghrs_11c <- as.numeric(sub("^(\\d{1}).*$", "\\1", fiji_subset$workinghrs_11c))
+fiji_subset$pressured_11d <- as.numeric(sub("^(\\d{1}).*$", "\\1", fiji_subset$pressured_11d))
+fiji_subset$threatened_11e <- as.numeric(sub("^(\\d{1}).*$", "\\1", fiji_subset$threatened_11e))
+fiji_subset$harmed_11f <- as.numeric(sub("^(\\d{1}).*$", "\\1", fiji_subset$harmed_11f))
+fiji_subset$threatened_pay_11g <- as.numeric(sub("^(\\d{1}).*$", "\\1", fiji_subset$threatened_pay_11g))
+fiji_subset$threatened_report_11h <-as.numeric(sub("^(\\d{1}).*$", "\\1", fiji_subset$threatened_report_11h))
+fiji_subset$id_papers_11i <- as.numeric(sub("^(\\d{1}).*$", "\\1", fiji_subset$id_papers_11i))
+fiji_subset$comm_family_11j <- as.numeric(sub("^(\\d{1}).*$", "\\1", fiji_subset$comm_family_11j))
+fiji_subset$comm_others_11k <- as.numeric(sub("^(\\d{1}).*$", "\\1", fiji_subset$comm_others_11k))
+fiji_subset$yes_number_12k <- as.numeric(sub("^(\\d{1}).*$", "\\1", fiji_subset$yes_number_12k))
+
+```
+
+We will proceed with a chi-square analysis.  We do this to see between two categorical variables (The type of activity and the yes/no response) if there is a significant association between the categories. 
+```{r}
+#create a set of contingency tables
+lesspay_2a <- with(fiji_subset, table(province, lesspay_2a))
+typeofwork <- with(fiji_subset, table(province, typeofwork))
+workinghrs <- with(fiji_subset, table(province, workinghrs))
+pressured <- with(fiji_subset, table(province, pressured))
+threatened <- with(fiji_subset, table(province, threatened))
+harmed <- with(fiji_subset, table(province, harmed))
+threatened_pay <- with(fiji_subset, table(province, threatened_pay))
+threatened_report <- with(fiji_subset, table(province, threatened_report))
+id_papers <- with(fiji_subset, table(province, id_papers))
+comm_family <- with(fiji_subset, table(province, comm_family))
+lesspay_11a <- with(fiji_subset, table(province, lesspay_11a))
+workinghrs_11c <- with(fiji_subset, table(province, workinghrs_11c))
+pressured_11d <- with(fiji_subset, table(province, pressured_11d))
+threatened_11e <- with(fiji_subset, table(province, threatened_11e))
+harmed_11f <- with(fiji_subset, table(province, harmed_11f))
+threatened_pay_11g <- with(fiji_subset, table(province, threatened_pay_11g))
+threatened_report_11h <- with(fiji_subset, table(province, threatened_report_11h))
+id_papers_11i <- with(fiji_subset, table(province, id_papers_11i))
+comm_family_11j <- with(fiji_subset, table(province, comm_family_11j))
+comm_others_11k <- with(fiji_subset, table(province, comm_others_11k))
+#yes_number_12k <- with(fiji_subset, table(province, yes_number_12k))
+
+```
+
+
+Now that the data are in contingency tables, we can create baloon plots
+ 
+```{r}
+library("gplots")
+baloonplot(t(lesspay_2a), main = "Response", xlab = "", ylab = "", label = FALSE, show.margins = FALSE)
+```
+
+```{r}
+library("graphics")
+mosaicplot(lesspay_2a, shade = TRUE, las = 2, main = "Response")
+```
+
+
+
+
+
+
+
+```{r}
+boxplot(lesspay_2a ~ province, data = fiji_subset, xlab = "Province", ylab = "Frequency of Less Payment")
+```
+
+
+Let's unpivot the data on a column by column basis so that we get a 
+
+
+
+
+
+
+
+Below this line are things tried but don't need
+
+Let's summarize the data and see how it looks first
+
+```{r}
+library(plyr)
+count(fiji_subset, 'province')
+```
+
+
+
+
+```{r}
+#create a set of contingency tables
+lesspay_2a <- with(fiji_subset, table(province, lesspay_2a))
+typeofwork <- with(fiji_subset, table(province, typeofwork))
+workinghrs <- with(fiji_subset, table(province, workinghrs))
+pressured <- with(fiji_subset, table(province, pressured))
+threatened <- with(fiji_subset, table(province, threatened))
+harmed <- with(fiji_subset, table(province, harmed))
+threatened_pay <- with(fiji_subset, table(province, threatened_pay))
+threatened_report <- with(fiji_subset, table(province, threatened_report))
+id_papers <- with(fiji_subset, table(province, id_papers))
+comm_family <- with(fiji_subset, table(province, comm_family))
+lesspay_11a <- with(fiji_subset, table(province, lesspay_11a))
+workinghrs_11c <- with(fiji_subset, table(province, workinghrs_11c))
+pressured_11d <- with(fiji_subset, table(province, pressured_11d))
+threatened_11e <- with(fiji_subset, table(province, threatened_11e))
+harmed_11f <- with(fiji_subset, table(province, harmed_11f))
+threatened_pay_11g <- with(fiji_subset, table(province, threatened_pay_11g))
+threatened_report_11h <- with(fiji_subset, table(province, threatened_report_11h))
+id_papers_11i <- with(fiji_subset, table(province, id_papers_11i))
+comm_family_11j <- with(fiji_subset, table(province, comm_family_11j))
+comm_others_11k <- with(fiji_subset, table(province, comm_others_11k))
+yes_number_12k <- with(fiji_subset, table(province, yes_number_12k))
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
